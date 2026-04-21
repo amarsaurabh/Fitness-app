@@ -1,11 +1,22 @@
 import { Redirect } from 'expo-router';
-
-// Placeholder until useUserStore is wired up in Phase 1
-const onboardingComplete = false;
+import { View, ActivityIndicator } from 'react-native';
+import { useUserStore } from '@/store/useUserStore';
 
 export default function Index() {
-  if (onboardingComplete) {
+  const profile = useUserStore((s) => s.profile);
+  const hydrated = useUserStore((s) => s.hydrated);
+
+  if (!hydrated) {
+    return (
+      <View className="flex-1 items-center justify-center bg-brand-navy">
+        <ActivityIndicator size="large" color="#f97316" />
+      </View>
+    );
+  }
+
+  if (profile?.onboardingComplete) {
     return <Redirect href="/(tabs)/home" />;
   }
+
   return <Redirect href="/onboarding" />;
 }
