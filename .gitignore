@@ -1,0 +1,21 @@
+node_modules/
+.expo/
+dist/
+web-build/
+.DS_Store
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Local env — never commit real keys
+.env
+.env.local
+
+# Expo
+expo-env.d.ts
