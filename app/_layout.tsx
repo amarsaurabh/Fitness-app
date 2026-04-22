@@ -3,23 +3,32 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import * as Notifications from 'expo-notifications';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useUserStore } from '@/store/useUserStore';
+import { useStreakStore } from '@/store/useStreakStore';
+import { useWorkoutStore } from '@/store/useWorkoutStore';
+import { useNutritionStore } from '@/store/useNutritionStore';
+import { useLLMCacheStore } from '@/store/useLLMCacheStore';
+import { setNotificationHandler } from '@/services/notifications/notificationService';
 
 SplashScreen.preventAutoHideAsync();
-
-// Handle notification taps while app is foregrounded
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
+setNotificationHandler();
 
 export default function RootLayout() {
+  const hydrateUser = useUserStore((s) => s.hydrate);
+  const hydrateStreak = useStreakStore((s) => s.hydrate);
+  const hydrateWorkout = useWorkoutStore((s) => s.hydrate);
+  const hydrateNutrition = useNutritionStore((s) => s.hydrate);
+  const hydrateCache = useLLMCacheStore((s) => s.hydrate);
+  const checkStreak = useStreakStore((s) => s.checkStreak);
+
   useEffect(() => {
-    SplashScreen.hideAsync();
+    hydrateUser().then(() => SplashScreen.hideAsync());
+    hydrateStreak();
+    hydrateWorkout();
+    hydrateNutrition();
+    hydrateCache();
+    checkStreak();
   }, []);
 
   return (
