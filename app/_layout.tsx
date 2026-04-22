@@ -9,7 +9,10 @@ import { useStreakStore } from '@/store/useStreakStore';
 import { useWorkoutStore } from '@/store/useWorkoutStore';
 import { useNutritionStore } from '@/store/useNutritionStore';
 import { useLLMCacheStore } from '@/store/useLLMCacheStore';
+import { useCustomWorkoutStore } from '@/store/useCustomWorkoutStore';
+import { useBodyWeightStore } from '@/store/useBodyWeightStore';
 import { setNotificationHandler } from '@/services/notifications/notificationService';
+import { applyNotificationSettings } from '@/services/notifications/scheduleNotifications';
 
 SplashScreen.preventAutoHideAsync();
 setNotificationHandler();
@@ -20,14 +23,24 @@ export default function RootLayout() {
   const hydrateWorkout = useWorkoutStore((s) => s.hydrate);
   const hydrateNutrition = useNutritionStore((s) => s.hydrate);
   const hydrateCache = useLLMCacheStore((s) => s.hydrate);
+  const hydrateCustomWorkouts = useCustomWorkoutStore((s) => s.hydrate);
+  const hydrateBodyWeight = useBodyWeightStore((s) => s.hydrate);
   const checkStreak = useStreakStore((s) => s.checkStreak);
 
   useEffect(() => {
-    hydrateUser().then(() => SplashScreen.hideAsync());
+    hydrateUser().then(() => {
+      SplashScreen.hideAsync();
+      const profile = useUserStore.getState().profile;
+      if (profile?.notificationsEnabled) {
+        applyNotificationSettings(profile).catch(() => {});
+      }
+    });
     hydrateStreak();
     hydrateWorkout();
     hydrateNutrition();
     hydrateCache();
+    hydrateCustomWorkouts();
+    hydrateBodyWeight();
     checkStreak();
   }, []);
 
@@ -40,6 +53,9 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="workout/[id]" />
         <Stack.Screen name="workout/summary" />
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="weekly-review" />
+        <Stack.Screen name="workout/build" />
         <Stack.Screen name="+not-found" />
       </Stack>
     </GestureHandlerRootView>

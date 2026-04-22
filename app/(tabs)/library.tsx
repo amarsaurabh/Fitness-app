@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { WORKOUTS } from '@/data/workouts';
+import { useCustomWorkoutStore } from '@/store/useCustomWorkoutStore';
 import type { Difficulty, WorkoutType, Workout } from '@/types/models';
 
 type TypeFilter = 'all' | WorkoutType;
@@ -34,15 +36,7 @@ const TYPE_EMOJI: Record<WorkoutType, string> = {
   gym: '🏋️',
 };
 
-function FilterChip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
+function FilterChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -58,7 +52,7 @@ function FilterChip({
   );
 }
 
-function WorkoutRow({ workout }: { workout: Workout }) {
+function WorkoutRow({ workout, onDelete }: { workout: Workout; onDelete?: () => void }) {
   const diffColor = DIFF_COLOR[workout.difficulty];
   return (
     <TouchableOpacity
@@ -68,25 +62,40 @@ function WorkoutRow({ workout }: { workout: Workout }) {
     >
       <View className="flex-row items-start justify-between mb-2">
         <View className="flex-1 mr-3">
-          <Text className="text-white text-base font-bold">{workout.name}</Text>
-          <View className="flex-row flex-wrap gap-x-3 mt-1.5">
-            <Text className="text-slate-400 text-xs">
-              {TYPE_EMOJI[workout.type]} {workout.type}
-            </Text>
+          <View className="flex-row items-center gap-2 mb-0.5">
+            <Text className="text-white text-base font-bold">{workout.name}</Text>
+            {workout.isCustom && (
+              <View className="bg-blue-500/20 rounded-md px-1.5 py-0.5">
+                <Text className="text-blue-300 text-xs font-semibold">Custom</Text>
+              </View>
+            )}
+          </View>
+          <View className="flex-row flex-wrap gap-x-3 mt-1">
+            {!workout.isCustom && (
+              <Text className="text-slate-400 text-xs">
+                {TYPE_EMOJI[workout.type]} {workout.type}
+              </Text>
+            )}
             <Text className="text-slate-400 text-xs">⏱ {workout.durationMin} min</Text>
             <Text className="text-slate-400 text-xs">🔥 ~{workout.estimatedCalories} kcal</Text>
-            <Text className="text-slate-400 text-xs">
-              💪 {workout.exerciseIds.length} exercises
-            </Text>
+            <Text className="text-slate-400 text-xs">💪 {workout.exerciseIds.length} exercises</Text>
           </View>
         </View>
-        <View
-          style={{ backgroundColor: diffColor + '28' }}
-          className="rounded-lg px-2.5 py-1 shrink-0"
-        >
-          <Text style={{ color: diffColor }} className="text-xs font-bold capitalize">
-            {workout.difficulty}
-          </Text>
+
+        <View className="flex-row items-center gap-2">
+          <View
+            style={{ backgroundColor: diffColor + '28' }}
+            className="rounded-lg px-2.5 py-1"
+          >
+            <Text style={{ color: diffColor }} className="text-xs font-bold capitalize">
+              {workout.difficulty}
+            </Text>
+          </View>
+          {onDelete && (
+            <TouchableOpacity onPress={onDelete} hitSlop={8}>
+              <Ionicons name="trash-outline" size={16} color="#475569" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -104,6 +113,8 @@ function WorkoutRow({ workout }: { workout: Workout }) {
 export default function LibraryScreen() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [diffFilter, setDiffFilter] = useState<DiffFilter>('all');
+  const customWorkouts = useCustomWorkoutStore((s) => s.workouts);
+  const deleteWorkout = useCustomWorkoutStore((s) => s.deleteWorkout);
 
   const filtered = useMemo(
     () =>
@@ -115,12 +126,29 @@ export default function LibraryScreen() {
     [typeFilter, diffFilter],
   );
 
+  function confirmDelete(id: string, name: string) {
+    Alert.alert(`Delete "${name}"?`, 'This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteWorkout(id) },
+    ]);
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-brand-navy">
       {/* Header */}
-      <View className="px-5 pt-4 pb-4">
-        <Text className="text-white text-2xl font-bold">Workouts</Text>
-        <Text className="text-slate-400 text-sm mt-1">{filtered.length} workouts</Text>
+      <View className="px-5 pt-4 pb-4 flex-row items-center justify-between">
+        <View>
+          <Text className="text-white text-2xl font-bold">Workouts</Text>
+          <Text className="text-slate-400 text-sm mt-0.5">{filtered.length} workouts</Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => router.push('/workout/build' as any)}
+          activeOpacity={0.8}
+          className="flex-row items-center gap-1.5 bg-brand-orange rounded-xl px-3 py-2"
+        >
+          <Ionicons name="add" size={16} color="#fff" />
+          <Text className="text-white text-sm font-bold">Create</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Type filter */}
@@ -156,18 +184,32 @@ export default function LibraryScreen() {
       </ScrollView>
 
       {/* List */}
-      <ScrollView
-        className="flex-1 px-5"
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
+        {/* Custom workouts section */}
+        {customWorkouts.length > 0 && (
+          <>
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-3">
+              Your workouts
+            </Text>
+            {customWorkouts.map((w) => (
+              <WorkoutRow
+                key={w.id}
+                workout={w}
+                onDelete={() => confirmDelete(w.id, w.name)}
+              />
+            ))}
+            <View className="h-px bg-brand-slate mb-4" />
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-3">
+              All workouts
+            </Text>
+          </>
+        )}
+
         {filtered.length === 0 ? (
-          <View className="items-center pt-16">
+          <View className="items-center pt-10">
             <Text className="text-slate-400 text-base">No workouts match these filters</Text>
             <TouchableOpacity
-              onPress={() => {
-                setTypeFilter('all');
-                setDiffFilter('all');
-              }}
+              onPress={() => { setTypeFilter('all'); setDiffFilter('all'); }}
               className="mt-4"
             >
               <Text className="text-brand-orange text-sm">Clear filters</Text>

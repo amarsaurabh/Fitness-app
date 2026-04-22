@@ -54,4 +54,6 @@ export const STORAGE_KEYS = {
   GROQ_CALLS_DATE: 'groq_calls_date',
   SOCIAL_BENCHMARK_CACHE: 'social_benchmark_cache',
   SOCIAL_BENCHMARK_DATE: 'social_benchmark_date',
+  CUSTOM_WORKOUTS: 'custom_workouts',
+  BODY_WEIGHT: 'body_weight_log',
 } as const;

@@ -1,9 +1,29 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useWorkoutStore } from '@/store/useWorkoutStore';
 import { useStreakStore } from '@/store/useStreakStore';
+import { useUserStore } from '@/store/useUserStore';
+import { computeNewDifficultyBias } from '@/utils/adaptiveDifficulty';
+
+const DIFFICULTY_FEEDBACK: Record<-1 | 0 | 1, { emoji: string; title: string; body: string }> = {
+  [-1]: {
+    emoji: '📉',
+    title: 'Workouts dialled back',
+    body: "We noticed some sessions were tough — workouts are now a bit easier.",
+  },
+  [0]: {
+    emoji: '⚖️',
+    title: 'Back to standard difficulty',
+    body: "You're finding your stride — workouts reset to default difficulty.",
+  },
+  [1]: {
+    emoji: '🚀',
+    title: 'Levelled up!',
+    body: "You've been crushing it — workouts are now more challenging.",
+  },
+};
 
 export default function WorkoutSummaryScreen() {
   const sessions = useWorkoutStore((s) => s.sessions);
@@ -12,11 +32,22 @@ export default function WorkoutSummaryScreen() {
   const session = sessions[0];
 
   const streakRecorded = useRef(false);
+  const [difficultyChanged, setDifficultyChanged] = useState<-1 | 0 | 1 | null>(null);
 
   useEffect(() => {
     if (session && !streakRecorded.current) {
       recordWorkout();
       streakRecorded.current = true;
+
+      const profile = useUserStore.getState().profile;
+      const allSessions = useWorkoutStore.getState().sessions;
+      if (profile) {
+        const newBias = computeNewDifficultyBias(allSessions, profile.difficultyBias);
+        if (newBias !== profile.difficultyBias) {
+          useUserStore.getState().updateProfile({ difficultyBias: newBias });
+          setDifficultyChanged(newBias);
+        }
+      }
     }
   }, []);
 
@@ -35,6 +66,7 @@ export default function WorkoutSummaryScreen() {
   }
 
   const streakIsNew = streak.current > 0;
+  const fb = difficultyChanged !== null ? DIFFICULTY_FEEDBACK[difficultyChanged] : null;
 
   return (
     <SafeAreaView className="flex-1 bg-brand-navy">
@@ -72,6 +104,19 @@ export default function WorkoutSummaryScreen() {
                   ? 'New personal best 🏆'
                   : 'Keep it going tomorrow'}
               </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Adaptive difficulty feedback */}
+        {fb && (
+          <View className="bg-brand-slate rounded-2xl p-4 flex-row items-center gap-4 mb-5">
+            <View className="w-12 h-12 bg-blue-500/20 rounded-2xl items-center justify-center">
+              <Text className="text-2xl">{fb.emoji}</Text>
+            </View>
+            <View className="flex-1">
+              <Text className="text-white font-bold text-base">{fb.title}</Text>
+              <Text className="text-slate-400 text-sm mt-0.5">{fb.body}</Text>
             </View>
           </View>
         )}
