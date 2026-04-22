@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { useUserStore } from '@/store/useUserStore';
 import { useWorkoutStore } from '@/store/useWorkoutStore';
+import { useStreakStore } from '@/store/useStreakStore';
 import { WORKOUTS } from '@/data/workouts';
 import type { Difficulty, Goal, Workout } from '@/types/models';
 
@@ -43,6 +44,7 @@ export function WorkoutCard() {
   const profile = useUserStore((s) => s.profile);
   const hasTodaySession = useWorkoutStore((s) => s.hasTodaySession);
   const getTodaySessions = useWorkoutStore((s) => s.getTodaySessions);
+  const streak = useStreakStore((s) => s.streak);
 
   const workedOutToday = hasTodaySession();
 
@@ -99,6 +101,20 @@ export function WorkoutCard() {
           <Text className="text-white font-bold text-base">Start Workout</Text>
         </TouchableOpacity>
       </View>
+
+      {streak.current > 0 && (
+        <TouchableOpacity
+          onPress={() => router.push('/workout/travel-one-minute' as any)}
+          activeOpacity={0.8}
+          className="mt-4 pt-4 border-t border-brand-navy flex-row items-center justify-between"
+        >
+          <View>
+            <Text className="text-white text-sm font-semibold">⚡ Streak Saver</Text>
+            <Text className="text-slate-400 text-xs mt-0.5">1 min · keeps your {streak.current}-day streak</Text>
+          </View>
+          <Text className="text-slate-500 text-lg">›</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

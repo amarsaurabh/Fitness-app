@@ -6,6 +6,7 @@ import { todayString } from '@/utils/streak';
 interface DailyProteinLog {
   date: string;
   loggedG: number;
+  loggedKcal?: number;
 }
 
 interface NutritionState {
@@ -16,11 +17,13 @@ interface NutritionState {
   removeFridgeItem: (id: string) => void;
   clearFridge: () => void;
   logProtein: (grams: number) => void;
+  logCalories: (kcal: number) => void;
   resetDailyLogIfNewDay: () => void;
   todayProteinG: () => number;
+  todayCaloriesKcal: () => number;
 }
 
-const emptyLog = (): DailyProteinLog => ({ date: todayString(), loggedG: 0 });
+const emptyLog = (): DailyProteinLog => ({ date: todayString(), loggedG: 0, loggedKcal: 0 });
 
 export const useNutritionStore = create<NutritionState>((set, get) => ({
   fridgeItems: [],
@@ -58,8 +61,21 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
     const today = todayString();
     const current = get().dailyLog;
     const updated: DailyProteinLog = {
+      ...current,
       date: today,
       loggedG: (current.date === today ? current.loggedG : 0) + grams,
+    };
+    setMMKV(STORAGE_KEYS.NUTRITION_LOG, updated);
+    set({ dailyLog: updated });
+  },
+
+  logCalories: (kcal) => {
+    const today = todayString();
+    const current = get().dailyLog;
+    const updated: DailyProteinLog = {
+      ...current,
+      date: today,
+      loggedKcal: (current.date === today ? (current.loggedKcal ?? 0) : 0) + kcal,
     };
     setMMKV(STORAGE_KEYS.NUTRITION_LOG, updated);
     set({ dailyLog: updated });
@@ -77,5 +93,10 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
   todayProteinG: () => {
     const log = get().dailyLog;
     return log.date === todayString() ? log.loggedG : 0;
+  },
+
+  todayCaloriesKcal: () => {
+    const log = get().dailyLog;
+    return log.date === todayString() ? (log.loggedKcal ?? 0) : 0;
   },
 }));

@@ -40,7 +40,8 @@ export default function ActiveWorkoutScreen() {
   // Start session once
   useEffect(() => {
     if (workout && !sessionStarted.current) {
-      startSession(workout.id, workout.name);
+      const isStreakSaver = workout.tags?.includes('streak-saver') ?? false;
+      startSession(workout.id, workout.name, isStreakSaver);
       sessionStarted.current = true;
     }
   }, []);

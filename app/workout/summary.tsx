@@ -6,6 +6,7 @@ import { useWorkoutStore } from '@/store/useWorkoutStore';
 import { useStreakStore } from '@/store/useStreakStore';
 import { useUserStore } from '@/store/useUserStore';
 import { computeNewDifficultyBias } from '@/utils/adaptiveDifficulty';
+import { MIN_SESSION_DURATION_SEC } from '@/utils/constants';
 
 const DIFFICULTY_FEEDBACK: Record<-1 | 0 | 1, { emoji: string; title: string; body: string }> = {
   [-1]: {
@@ -34,8 +35,10 @@ export default function WorkoutSummaryScreen() {
   const streakRecorded = useRef(false);
   const [difficultyChanged, setDifficultyChanged] = useState<-1 | 0 | 1 | null>(null);
 
+  const sessionLongEnough = session ? session.durationMin * 60 >= MIN_SESSION_DURATION_SEC : false;
+
   useEffect(() => {
-    if (session && !streakRecorded.current) {
+    if (session && !streakRecorded.current && sessionLongEnough) {
       recordWorkout();
       streakRecorded.current = true;
 
@@ -65,7 +68,7 @@ export default function WorkoutSummaryScreen() {
     );
   }
 
-  const streakIsNew = streak.current > 0;
+  const streakIsNew = streak.current > 0 && sessionLongEnough;
   const fb = difficultyChanged !== null ? DIFFICULTY_FEEDBACK[difficultyChanged] : null;
 
   return (
@@ -88,6 +91,36 @@ export default function WorkoutSummaryScreen() {
           <StatBox value={String(session.caloriesBurned)} label="kcal" />
           <StatBox value={String(session.exercisesCompleted.length)} label="exercises" />
         </View>
+
+        {/* Too-short warning */}
+        {!sessionLongEnough && (
+          <View className="bg-brand-slate rounded-2xl p-4 flex-row items-center gap-4 mb-5">
+            <View className="w-12 h-12 bg-slate-500/20 rounded-2xl items-center justify-center">
+              <Text className="text-2xl">⏱</Text>
+            </View>
+            <View className="flex-1">
+              <Text className="text-white font-bold text-base">Session too short</Text>
+              <Text className="text-slate-400 text-sm mt-0.5">
+                Sessions under 1 minute don't count towards your streak.
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Streak saver badge */}
+        {session.isOneMineMode && sessionLongEnough && (
+          <View className="bg-brand-slate rounded-2xl p-4 flex-row items-center gap-4 mb-5">
+            <View className="w-12 h-12 bg-orange-500/20 rounded-2xl items-center justify-center">
+              <Text className="text-2xl">⚡</Text>
+            </View>
+            <View className="flex-1">
+              <Text className="text-white font-bold text-base">Streak saved!</Text>
+              <Text className="text-slate-400 text-sm mt-0.5">
+                1-minute session — streak protected for today.
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Streak update */}
         {streakIsNew && (
