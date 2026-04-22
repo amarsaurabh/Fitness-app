@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useUserStore } from '@/store/useUserStore';
 import type { Goal, ActivityLevel, FoodCulture } from '@/types/models';
 import { FOOD_CULTURE_LABELS, FOOD_CULTURE_EMOJI } from '@/data/culturalFoods';
+import { applyNotificationSettings } from '@/services/notifications/scheduleNotifications';
 
 const GOAL_OPTIONS: { value: Goal; label: string; emoji: string }[] = [
   { value: 'lose_weight', label: 'Lose weight', emoji: '🎯' },
@@ -231,7 +232,10 @@ export default function SettingsScreen() {
           <Row label="Protein reminders">
             <Switch
               value={profile.notificationsEnabled}
-              onValueChange={(v) => save({ notificationsEnabled: v })}
+              onValueChange={(v) => {
+                save({ notificationsEnabled: v });
+                applyNotificationSettings({ ...profile, notificationsEnabled: v }).catch(() => {});
+              }}
               trackColor={{ false: '#1e293b', true: '#f97316' }}
               thumbColor="#fff"
             />
@@ -241,7 +245,15 @@ export default function SettingsScreen() {
               value={reminderTime}
               onChangeText={setReminderTime}
               onBlur={() => {
-                if (/^\d{2}:\d{2}$/.test(reminderTime)) save({ proteinReminderTime: reminderTime });
+                if (/^\d{2}:\d{2}$/.test(reminderTime)) {
+                  save({ proteinReminderTime: reminderTime });
+                  if (profile.notificationsEnabled) {
+                    applyNotificationSettings({
+                      ...profile,
+                      proteinReminderTime: reminderTime,
+                    }).catch(() => {});
+                  }
+                }
               }}
               className="text-white text-sm text-right w-20"
               placeholderTextColor="#475569"

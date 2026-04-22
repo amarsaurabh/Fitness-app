@@ -10,6 +10,7 @@ import { useWorkoutStore } from '@/store/useWorkoutStore';
 import { useNutritionStore } from '@/store/useNutritionStore';
 import { useLLMCacheStore } from '@/store/useLLMCacheStore';
 import { setNotificationHandler } from '@/services/notifications/notificationService';
+import { applyNotificationSettings } from '@/services/notifications/scheduleNotifications';
 
 SplashScreen.preventAutoHideAsync();
 setNotificationHandler();
@@ -23,7 +24,13 @@ export default function RootLayout() {
   const checkStreak = useStreakStore((s) => s.checkStreak);
 
   useEffect(() => {
-    hydrateUser().then(() => SplashScreen.hideAsync());
+    hydrateUser().then(() => {
+      SplashScreen.hideAsync();
+      const profile = useUserStore.getState().profile;
+      if (profile?.notificationsEnabled) {
+        applyNotificationSettings(profile).catch(() => {});
+      }
+    });
     hydrateStreak();
     hydrateWorkout();
     hydrateNutrition();

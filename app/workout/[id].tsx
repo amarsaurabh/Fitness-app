@@ -9,6 +9,8 @@ import { useUserStore } from '@/store/useUserStore';
 import { estimateCalories } from '@/utils/calories';
 import type { Exercise } from '@/types/models';
 
+const REST_DURATION = 30; // seconds between exercises
+
 function fmt(sec: number) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
@@ -30,6 +32,7 @@ export default function ActiveWorkoutScreen() {
   const [elapsed, setElapsed] = useState(0);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [timerRunning, setTimerRunning] = useState(false);
+  const [restCountdown, setRestCountdown] = useState<number | null>(null);
   const sessionStarted = useRef(false);
 
   // Start session once
@@ -40,7 +43,7 @@ export default function ActiveWorkoutScreen() {
     }
   }, []);
 
-  // Session elapsed timer
+  // Session elapsed timer (runs through rest periods — rest counts as workout time)
   useEffect(() => {
     const t = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(t);
@@ -57,6 +60,18 @@ export default function ActiveWorkoutScreen() {
     return () => clearTimeout(t);
   }, [countdown, timerRunning]);
 
+  // Rest timer
+  useEffect(() => {
+    if (restCountdown === null) return;
+    if (restCountdown <= 0) {
+      setRestCountdown(null);
+      setCurrentIdx((i) => i + 1);
+      return;
+    }
+    const t = setTimeout(() => setRestCountdown((c) => (c ?? 1) - 1), 1000);
+    return () => clearTimeout(t);
+  }, [restCountdown]);
+
   if (!workout || exercises.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-brand-navy items-center justify-center px-6">
@@ -69,6 +84,7 @@ export default function ActiveWorkoutScreen() {
   }
 
   const ex = exercises[currentIdx];
+  const nextEx = exercises[currentIdx + 1];
   const isTimed = ex.durationSec !== undefined;
   const isLast = currentIdx === exercises.length - 1;
   const progress = completedIds.length / exercises.length;
@@ -93,7 +109,7 @@ export default function ActiveWorkoutScreen() {
       completeSession(Math.round(calcCalories()));
       router.replace('/workout/summary');
     } else {
-      setCurrentIdx((i) => i + 1);
+      setRestCountdown(REST_DURATION);
     }
   }
 
@@ -122,6 +138,62 @@ export default function ActiveWorkoutScreen() {
     ]);
   }
 
+  // ── Rest screen ────────────────────────────────────────────────────────────
+  if (restCountdown !== null) {
+    const restPct = 1 - restCountdown / REST_DURATION;
+    return (
+      <SafeAreaView className="flex-1 bg-brand-navy items-center justify-center px-8">
+        <Text className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-6">
+          Rest
+        </Text>
+
+        {/* Countdown */}
+        <Text
+          className="text-white font-bold tabular-nums mb-1"
+          style={{ fontSize: 96, lineHeight: 104 }}
+        >
+          {restCountdown}
+        </Text>
+        <Text className="text-slate-500 text-base mb-8">seconds</Text>
+
+        {/* Rest progress bar */}
+        <View className="w-full h-1.5 bg-brand-slate rounded-full mb-10 overflow-hidden">
+          <View
+            className="h-full bg-brand-orange rounded-full"
+            style={{ width: `${restPct * 100}%` }}
+          />
+        </View>
+
+        {/* Next exercise preview */}
+        {nextEx && (
+          <View className="bg-brand-slate rounded-2xl p-4 w-full mb-8">
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-1">
+              Up next
+            </Text>
+            <Text className="text-white font-bold text-lg">{nextEx.name}</Text>
+            <Text className="text-brand-orange text-sm mt-0.5">
+              {nextEx.durationSec !== undefined
+                ? `${nextEx.durationSec}s × ${nextEx.defaultSets ?? 1} set`
+                : `${nextEx.defaultReps} reps × ${nextEx.defaultSets ?? 3} sets`}
+            </Text>
+          </View>
+        )}
+
+        <TouchableOpacity
+          onPress={() => {
+            setRestCountdown(null);
+            setCurrentIdx((i) => i + 1);
+          }}
+          className="bg-brand-orange rounded-2xl px-10 py-4"
+          activeOpacity={0.85}
+        >
+          <Text className="text-white font-bold text-base">Skip Rest →</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Active exercise screen ─────────────────────────────────────────────────
   return (
     <SafeAreaView className="flex-1 bg-brand-navy">
       {/* Header */}
@@ -174,7 +246,6 @@ export default function ActiveWorkoutScreen() {
           <View className="bg-brand-slate rounded-3xl p-6 mb-4 items-center">
             <Text className="text-white text-7xl font-bold tabular-nums">{countdown}</Text>
             <Text className="text-slate-400 text-sm mt-2">seconds remaining</Text>
-            {/* Mini progress arc (text fallback) */}
             <View className="mt-3 w-full h-1.5 bg-brand-navy rounded-full overflow-hidden">
               <View
                 className="h-full bg-brand-orange rounded-full"
@@ -191,7 +262,6 @@ export default function ActiveWorkoutScreen() {
 
       {/* Bottom CTAs */}
       <View className="px-5 pb-6 pt-2 gap-3">
-        {/* Timed: show Start Timer or Done Early */}
         {isTimed && countdown === null && (
           <TouchableOpacity
             onPress={() => {
@@ -207,9 +277,7 @@ export default function ActiveWorkoutScreen() {
 
         {isTimed && timerRunning && (
           <TouchableOpacity
-            onPress={() => {
-              setCountdown(0);
-            }}
+            onPress={() => setCountdown(0)}
             className="bg-brand-orange rounded-2xl py-4 items-center"
             activeOpacity={0.85}
           >
@@ -217,7 +285,6 @@ export default function ActiveWorkoutScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Rep-based: single done button */}
         {!isTimed && (
           <TouchableOpacity
             onPress={advanceOrFinish}
@@ -230,7 +297,6 @@ export default function ActiveWorkoutScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Skip (always available, hidden on last if no timer) */}
         {(!isLast || isTimed) && (
           <TouchableOpacity onPress={handleSkip} className="py-2 items-center">
             <Text className="text-slate-500 text-sm">
