@@ -9,6 +9,8 @@ import { useStreakStore } from '@/store/useStreakStore';
 import { useWorkoutStore } from '@/store/useWorkoutStore';
 import { useNutritionStore } from '@/store/useNutritionStore';
 import { useLLMCacheStore } from '@/store/useLLMCacheStore';
+import { useCustomWorkoutStore } from '@/store/useCustomWorkoutStore';
+import { useBodyWeightStore } from '@/store/useBodyWeightStore';
 import { setNotificationHandler } from '@/services/notifications/notificationService';
 import { applyNotificationSettings } from '@/services/notifications/scheduleNotifications';
 
@@ -21,6 +23,8 @@ export default function RootLayout() {
   const hydrateWorkout = useWorkoutStore((s) => s.hydrate);
   const hydrateNutrition = useNutritionStore((s) => s.hydrate);
   const hydrateCache = useLLMCacheStore((s) => s.hydrate);
+  const hydrateCustomWorkouts = useCustomWorkoutStore((s) => s.hydrate);
+  const hydrateBodyWeight = useBodyWeightStore((s) => s.hydrate);
   const checkStreak = useStreakStore((s) => s.checkStreak);
 
   useEffect(() => {
@@ -35,6 +39,8 @@ export default function RootLayout() {
     hydrateWorkout();
     hydrateNutrition();
     hydrateCache();
+    hydrateCustomWorkouts();
+    hydrateBodyWeight();
     checkStreak();
   }, []);
 
@@ -49,6 +55,7 @@ export default function RootLayout() {
         <Stack.Screen name="workout/summary" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="weekly-review" />
+        <Stack.Screen name="workout/build" />
         <Stack.Screen name="+not-found" />
       </Stack>
     </GestureHandlerRootView>

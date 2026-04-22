@@ -53,6 +53,12 @@ export interface Workout {
   durationMin: number;
   difficulty: Difficulty;
   tags: string[]; // e.g. ['core', 'cardio', 'upper-body']
+  isCustom?: boolean;
+}
+
+export interface WeightEntry {
+  date: string; // 'YYYY-MM-DD'
+  kg: number;
 }
 
 export interface WorkoutSession {

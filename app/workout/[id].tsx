@@ -6,6 +6,7 @@ import { getWorkoutById } from '@/data/workouts';
 import { getExerciseById } from '@/data/exercises';
 import { useWorkoutStore } from '@/store/useWorkoutStore';
 import { useUserStore } from '@/store/useUserStore';
+import { useCustomWorkoutStore } from '@/store/useCustomWorkoutStore';
 import { estimateCalories } from '@/utils/calories';
 import type { Exercise } from '@/types/models';
 
@@ -19,7 +20,8 @@ function fmt(sec: number) {
 
 export default function ActiveWorkoutScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const workout = getWorkoutById(id ?? '');
+  const customWorkouts = useCustomWorkoutStore((s) => s.workouts);
+  const workout = getWorkoutById(id ?? '') ?? customWorkouts.find((w) => w.id === id);
   const exercises = (workout?.exerciseIds.map(getExerciseById).filter(Boolean) as Exercise[]) ?? [];
 
   const profile = useUserStore((s) => s.profile);

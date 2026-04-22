@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Polyline, Circle as SvgCircle } from 'react-native-svg';
 import { useWorkoutStore } from '@/store/useWorkoutStore';
 import { useStreakStore } from '@/store/useStreakStore';
 import { useUserStore } from '@/store/useUserStore';
-import type { WorkoutSession, Streak, PatternInsight } from '@/types/models';
+import { useBodyWeightStore } from '@/store/useBodyWeightStore';
+import type { WorkoutSession, Streak, PatternInsight, WeightEntry } from '@/types/models';
 
 // ─── Pure helpers ─────────────────────────────────────────────────────────────
 
@@ -356,6 +358,152 @@ function StreakHistorySection({ streak }: { streak: Streak }) {
   );
 }
 
+// ─── Body weight card ─────────────────────────────────────────────────────────
+
+function WeightSparkline({ entries }: { entries: WeightEntry[] }) {
+  const W = 260;
+  const H = 52;
+  const PAD = 6;
+  const inner = entries.slice(0, 20).reverse(); // oldest first
+  if (inner.length < 2) return null;
+
+  const kgs = inner.map((e) => e.kg);
+  const minKg = Math.min(...kgs);
+  const maxKg = Math.max(...kgs);
+  const range = maxKg - minKg || 1;
+
+  const pts = inner.map((e, i) => ({
+    x: PAD + (i / (inner.length - 1)) * (W - PAD * 2),
+    y: PAD + (1 - (e.kg - minKg) / range) * (H - PAD * 2),
+  }));
+
+  const pointStr = pts.map((p) => `${p.x},${p.y}`).join(' ');
+  const last = pts[pts.length - 1];
+
+  return (
+    <Svg width={W} height={H}>
+      <Polyline
+        points={pointStr}
+        fill="none"
+        stroke="#f97316"
+        strokeWidth={2}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <SvgCircle cx={last.x} cy={last.y} r={4} fill="#f97316" />
+    </Svg>
+  );
+}
+
+function WeightCard() {
+  const { entries, logWeight, todayEntry } = useBodyWeightStore();
+  const [logging, setLogging] = useState(false);
+  const [input, setInput] = useState('');
+
+  const today = todayEntry();
+  const last = entries[0];
+  const prev = entries[1];
+  const trend =
+    last && prev
+      ? last.kg > prev.kg
+        ? '↑'
+        : last.kg < prev.kg
+        ? '↓'
+        : '→'
+      : null;
+  const trendColor =
+    trend === '↑' ? '#ef4444' : trend === '↓' ? '#22c55e' : '#94a3b8';
+
+  function handleLog() {
+    const kg = parseFloat(input);
+    if (isNaN(kg) || kg <= 0 || kg > 300) return;
+    logWeight(kg);
+    setInput('');
+    setLogging(false);
+  }
+
+  return (
+    <View className="bg-brand-slate rounded-3xl p-5 mb-4">
+      <View className="flex-row items-center justify-between mb-4">
+        <Text className="text-white text-base font-bold">Body weight</Text>
+        {last && (
+          <View className="flex-row items-center gap-1.5">
+            {trend && (
+              <Text className="font-bold text-sm" style={{ color: trendColor }}>
+                {trend}
+              </Text>
+            )}
+            <Text className="text-white font-bold">{last.kg} kg</Text>
+          </View>
+        )}
+      </View>
+
+      {entries.length >= 2 ? (
+        <View className="mb-4">
+          <WeightSparkline entries={entries} />
+          <View className="flex-row justify-between mt-1">
+            <Text className="text-slate-500 text-xs">
+              {entries[Math.min(entries.length - 1, 19)]?.date}
+            </Text>
+            <Text className="text-slate-500 text-xs">{entries[0]?.date}</Text>
+          </View>
+        </View>
+      ) : entries.length === 1 ? (
+        <Text className="text-slate-400 text-sm mb-4">
+          Log a second entry to see your trend chart.
+        </Text>
+      ) : (
+        <Text className="text-slate-400 text-sm mb-4">
+          Log your weight regularly to track progress over time.
+        </Text>
+      )}
+
+      {logging ? (
+        <View className="flex-row gap-2">
+          <TextInput
+            value={input}
+            onChangeText={setInput}
+            placeholder="e.g. 72.5"
+            placeholderTextColor="#475569"
+            keyboardType="decimal-pad"
+            returnKeyType="done"
+            onSubmitEditing={handleLog}
+            autoFocus
+            className="flex-1 bg-brand-navy text-white rounded-xl px-4 py-3 text-sm"
+          />
+          <TouchableOpacity
+            onPress={handleLog}
+            disabled={!input.trim()}
+            className={`rounded-xl px-4 py-3 items-center justify-center ${input.trim() ? 'bg-brand-orange' : 'bg-brand-navy'}`}
+            activeOpacity={0.8}
+          >
+            <Text className={`font-bold text-sm ${input.trim() ? 'text-white' : 'text-slate-600'}`}>
+              Log
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => { setLogging(false); setInput(''); }}
+            className="rounded-xl px-3 py-3 items-center justify-center bg-brand-navy"
+            activeOpacity={0.8}
+          >
+            <Text className="text-slate-400 text-sm">✕</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity
+          onPress={() => { setLogging(true); setInput(today ? String(today.kg) : ''); }}
+          activeOpacity={0.8}
+          className="bg-brand-navy rounded-xl py-3 items-center"
+        >
+          <Text className="text-brand-orange font-semibold text-sm">
+            {today ? `Update today's weight (${today.kg} kg)` : 'Log today's weight'}
+          </Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
 function WeeklyReviewCTA() {
   return (
     <TouchableOpacity
@@ -420,6 +568,7 @@ export default function ProgressScreen() {
         <WeeklyChart sessions={completedSessions} />
         <InsightsSection sessions={completedSessions} streak={streak} />
         <StreakHistorySection streak={streak} />
+        <WeightCard />
         <WeeklyReviewCTA />
       </ScrollView>
     </SafeAreaView>
