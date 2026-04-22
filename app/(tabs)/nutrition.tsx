@@ -103,6 +103,62 @@ function ProteinProgress() {
   );
 }
 
+// ─── Calorie Progress ────────────────────────────────────────────────────────
+
+function CalorieProgress() {
+  const todayCaloriesKcal = useNutritionStore((s) => s.todayCaloriesKcal);
+  const logCalories = useNutritionStore((s) => s.logCalories);
+  const dailyCalorieGoal = useUserStore((s) => s.dailyCalorieGoal);
+
+  const logged = todayCaloriesKcal();
+  const goal = dailyCalorieGoal();
+  const progress = Math.min(goal > 0 ? logged / goal : 0, 1);
+  const remaining = Math.max(goal - Math.round(logged), 0);
+  const pct = Math.round(progress * 100);
+
+  const barColor = progress >= 1 ? '#22c55e' : progress >= 0.5 ? '#f97316' : '#ef4444';
+
+  return (
+    <View className="bg-brand-slate rounded-3xl p-5 mb-4">
+      <Text className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-4">
+        Today's calories
+      </Text>
+
+      <View className="flex-row items-end justify-between mb-3">
+        <Text className="text-white text-4xl font-bold">{Math.round(logged)}</Text>
+        <Text className="text-slate-400 text-sm mb-1">of {goal} kcal · {pct}%</Text>
+      </View>
+
+      <View className="h-2.5 bg-brand-navy rounded-full mb-2 overflow-hidden">
+        <View
+          className="h-full rounded-full"
+          style={{ width: `${progress * 100}%`, backgroundColor: barColor }}
+        />
+      </View>
+
+      <Text className="text-slate-400 text-xs mb-5">
+        {remaining > 0 ? `${remaining} kcal remaining` : 'Daily goal reached! 🎉'}
+      </Text>
+
+      <Text className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-3">
+        Quick log
+      </Text>
+      <View className="flex-row gap-2">
+        {[200, 400, 600, 750].map((k) => (
+          <TouchableOpacity
+            key={k}
+            onPress={() => logCalories(k)}
+            activeOpacity={0.8}
+            className="flex-1 bg-brand-navy rounded-xl py-3 items-center"
+          >
+            <Text className="text-brand-orange font-bold text-sm">+{k}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 // ─── Cultural Food Grid ───────────────────────────────────────────────────────
 
 function FoodChip({
@@ -374,6 +430,7 @@ export default function NutritionScreen() {
         </View>
 
         <ProteinProgress />
+        <CalorieProgress />
         <CulturalFoodsSection />
         <FridgeSection />
       </ScrollView>

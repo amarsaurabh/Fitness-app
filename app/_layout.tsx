@@ -56,6 +56,7 @@ export default function RootLayout() {
         <Stack.Screen name="settings" />
         <Stack.Screen name="weekly-review" />
         <Stack.Screen name="workout/build" />
+        <Stack.Screen name="workout/history" />
         <Stack.Screen name="+not-found" />
       </Stack>
     </GestureHandlerRootView>

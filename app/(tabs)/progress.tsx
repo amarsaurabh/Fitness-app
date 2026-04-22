@@ -504,6 +504,29 @@ function WeightCard() {
   );
 }
 
+function HistoryCTA() {
+  return (
+    <TouchableOpacity
+      onPress={() => router.push('/workout/history' as any)}
+      activeOpacity={0.85}
+      className="bg-brand-slate rounded-3xl p-5 mb-4"
+    >
+      <View className="flex-row items-center gap-4">
+        <View className="w-12 h-12 bg-blue-500/20 rounded-2xl items-center justify-center">
+          <Text className="text-2xl">📋</Text>
+        </View>
+        <View className="flex-1">
+          <Text className="text-white font-bold text-base">Session history</Text>
+          <Text className="text-slate-400 text-sm mt-0.5">
+            Browse all your past workouts by week
+          </Text>
+        </View>
+        <Text className="text-slate-500 text-lg">›</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 function WeeklyReviewCTA() {
   return (
     <TouchableOpacity
@@ -569,6 +592,7 @@ export default function ProgressScreen() {
         <InsightsSection sessions={completedSessions} streak={streak} />
         <StreakHistorySection streak={streak} />
         <WeightCard />
+        <HistoryCTA />
         <WeeklyReviewCTA />
       </ScrollView>
     </SafeAreaView>
