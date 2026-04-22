@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useWorkoutStore } from '@/store/useWorkoutStore';
 import { useStreakStore } from '@/store/useStreakStore';
@@ -355,6 +356,29 @@ function StreakHistorySection({ streak }: { streak: Streak }) {
   );
 }
 
+function WeeklyReviewCTA() {
+  return (
+    <TouchableOpacity
+      onPress={() => router.push('/weekly-review')}
+      activeOpacity={0.85}
+      className="bg-brand-slate rounded-3xl p-5 mb-4"
+    >
+      <View className="flex-row items-center gap-4">
+        <View className="w-12 h-12 bg-orange-500/20 rounded-2xl items-center justify-center">
+          <Text className="text-2xl">🤖</Text>
+        </View>
+        <View className="flex-1">
+          <Text className="text-white font-bold text-base">Weekly AI review</Text>
+          <Text className="text-slate-400 text-sm mt-0.5">
+            Get a personalised summary of your week
+          </Text>
+        </View>
+        <Text className="text-slate-500 text-lg">›</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function ProgressScreen() {
@@ -396,6 +420,7 @@ export default function ProgressScreen() {
         <WeeklyChart sessions={completedSessions} />
         <InsightsSection sessions={completedSessions} streak={streak} />
         <StreakHistorySection streak={streak} />
+        <WeeklyReviewCTA />
       </ScrollView>
     </SafeAreaView>
   );
