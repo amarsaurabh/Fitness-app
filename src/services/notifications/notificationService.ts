@@ -1,6 +1,8 @@
+import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
 export function setNotificationHandler() {
+  if (Platform.OS === 'web') return;
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
@@ -11,6 +13,7 @@ export function setNotificationHandler() {
 }
 
 export async function requestPermissions(): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
   const { status: existing } = await Notifications.getPermissionsAsync();
   if (existing === 'granted') return true;
   const { status } = await Notifications.requestPermissionsAsync();
@@ -23,6 +26,7 @@ export async function scheduleNotification(
   body: string,
   trigger: Notifications.NotificationTriggerInput,
 ): Promise<string> {
+  if (Platform.OS === 'web') return identifier;
   await cancelNotification(identifier);
   return Notifications.scheduleNotificationAsync({
     identifier,
@@ -32,10 +36,12 @@ export async function scheduleNotification(
 }
 
 export async function cancelNotification(identifier: string): Promise<void> {
+  if (Platform.OS === 'web') return;
   await Notifications.cancelScheduledNotificationAsync(identifier).catch(() => {});
 }
 
 export async function cancelAllNotifications(): Promise<void> {
+  if (Platform.OS === 'web') return;
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
 

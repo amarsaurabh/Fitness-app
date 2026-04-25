@@ -39,7 +39,7 @@ export default function OnboardingStep1() {
     <SafeAreaView className="flex-1 bg-brand-navy">
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'web' ? undefined : 'height'}
       >
         <View className="px-6 pt-6 pb-4">
           <StepIndicator total={5} current={0} />
