@@ -128,7 +128,7 @@ export default function ActiveWorkoutScreen() {
   }
 
   function handleAbandon() {
-    Alert.alert('Abandon workout?', 'Your progress won't be saved.', [
+    Alert.alert('Abandon workout?', "Your progress won't be saved.", [
       { text: 'Keep going', style: 'cancel' },
       {
         text: 'Abandon',

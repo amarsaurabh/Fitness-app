@@ -496,7 +496,7 @@ function WeightCard() {
           className="bg-brand-navy rounded-xl py-3 items-center"
         >
           <Text className="text-brand-orange font-semibold text-sm">
-            {today ? `Update today's weight (${today.kg} kg)` : 'Log today's weight'}
+            {today ? `Update today's weight (${today.kg} kg)` : "Log today's weight"}
           </Text>
         </TouchableOpacity>
       )}
