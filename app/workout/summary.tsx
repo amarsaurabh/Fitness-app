@@ -5,8 +5,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useWorkoutStore } from '@/store/useWorkoutStore';
 import { useStreakStore } from '@/store/useStreakStore';
 import { useUserStore } from '@/store/useUserStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { computeNewDifficultyBias } from '@/utils/adaptiveDifficulty';
 import { MIN_SESSION_DURATION_SEC } from '@/utils/constants';
+import SaveProgressModal from '@/components/auth/SaveProgressModal';
 
 const DIFFICULTY_FEEDBACK: Record<-1 | 0 | 1, { emoji: string; title: string; body: string }> = {
   [-1]: {
@@ -32,8 +34,10 @@ export default function WorkoutSummaryScreen() {
   const streak = useStreakStore((s) => s.streak);
   const session = sessions[0];
 
+  const isAnonymous = useAuthStore((s) => s.isAnonymous);
   const streakRecorded = useRef(false);
   const [difficultyChanged, setDifficultyChanged] = useState<-1 | 0 | 1 | null>(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
 
   const sessionLongEnough = session ? session.durationMin * 60 >= MIN_SESSION_DURATION_SEC : false;
 
@@ -50,6 +54,10 @@ export default function WorkoutSummaryScreen() {
           useUserStore.getState().updateProfile({ difficultyBias: newBias });
           setDifficultyChanged(newBias);
         }
+      }
+
+      if (useAuthStore.getState().isAnonymous) {
+        setShowSaveModal(true);
       }
     }
   }, []);
@@ -184,6 +192,11 @@ export default function WorkoutSummaryScreen() {
           <Text className="text-white font-bold text-base">Back to Home</Text>
         </TouchableOpacity>
       </View>
+
+      <SaveProgressModal
+        visible={showSaveModal}
+        onDismiss={() => setShowSaveModal(false)}
+      />
     </SafeAreaView>
   );
 }

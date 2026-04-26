@@ -13,6 +13,7 @@ import { useCustomWorkoutStore } from '@/store/useCustomWorkoutStore';
 import { useBodyWeightStore } from '@/store/useBodyWeightStore';
 import { setNotificationHandler } from '@/services/notifications/notificationService';
 import { applyNotificationSettings } from '@/services/notifications/scheduleNotifications';
+import { useAuthStore } from '@/store/useAuthStore';
 
 SplashScreen.preventAutoHideAsync();
 setNotificationHandler();
@@ -26,8 +27,10 @@ export default function RootLayout() {
   const hydrateCustomWorkouts = useCustomWorkoutStore((s) => s.hydrate);
   const hydrateBodyWeight = useBodyWeightStore((s) => s.hydrate);
   const checkStreak = useStreakStore((s) => s.checkStreak);
+  const initAuth = useAuthStore((s) => s.initAuth);
 
   useEffect(() => {
+    initAuth();
     hydrateUser().then(() => {
       SplashScreen.hideAsync();
       const profile = useUserStore.getState().profile;
