@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { User } from '@supabase/supabase-js';
-import { supabase } from '@/services/supabase/client';
+import { getSupabase } from '@/services/supabase/client';
 import { syncLocalDataToSupabase } from '@/services/supabase/sync';
 
 interface AuthState {
@@ -15,10 +15,13 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAnonymous: false,
-  initialized: false,
+  initialized: true,
 
   initAuth: async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const sb = getSupabase();
+    if (!sb) return;
+
+    const { data: { session } } = await sb.auth.getSession();
 
     if (session?.user) {
       set({
@@ -27,22 +30,22 @@ export const useAuthStore = create<AuthState>((set) => ({
         initialized: true,
       });
     } else {
-      const { data, error } = await supabase.auth.signInAnonymously();
+      const { data, error } = await sb.auth.signInAnonymously();
       if (!error && data.user) {
         set({ user: data.user, isAnonymous: true, initialized: true });
-      } else {
-        set({ initialized: true });
       }
     }
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    sb.auth.onAuthStateChange((_event, session) => {
       const user = session?.user ?? null;
       set({ user, isAnonymous: user?.is_anonymous ?? false });
     });
   },
 
   signUpWithEmail: async (email, password) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const sb = getSupabase();
+    if (!sb) return 'Supabase not available.';
+    const { data, error } = await sb.auth.signUp({ email, password });
     if (error) return error.message;
     if (data.user) {
       set({ user: data.user, isAnonymous: false });
@@ -52,7 +55,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   signInWithGoogle: async () => {
+    const sb = getSupabase();
+    if (!sb) return;
     const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
-    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
+    await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
   },
 }));

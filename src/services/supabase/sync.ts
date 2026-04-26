@@ -1,4 +1,4 @@
-import { supabase } from './client';
+import { getSupabase } from './client';
 import { getMMKV, getAsync, STORAGE_KEYS } from '@/utils/storage';
 
 // Supabase table: user_sync (user_id uuid, key text, value jsonb, updated_at timestamptz)
@@ -13,6 +13,9 @@ type SyncRow = {
 };
 
 export async function syncLocalDataToSupabase(userId: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) return;
+
   const now = new Date().toISOString();
   const rows: SyncRow[] = [];
 
@@ -32,7 +35,5 @@ export async function syncLocalDataToSupabase(userId: string): Promise<void> {
 
   if (rows.length === 0) return;
 
-  await supabase
-    .from('user_sync')
-    .upsert(rows, { onConflict: 'user_id,key' });
+  await sb.from('user_sync').upsert(rows, { onConflict: 'user_id,key' });
 }
