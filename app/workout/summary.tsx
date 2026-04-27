@@ -67,7 +67,7 @@ export default function WorkoutSummaryScreen() {
       <SafeAreaView className="flex-1 bg-brand-navy items-center justify-center px-6">
         <Text className="text-white text-lg">No session data</Text>
         <TouchableOpacity
-          onPress={() => router.replace('/(tabs)/home')}
+          onPress={() => router.replace('/(tabs)/today')}
           className="mt-6"
         >
           <Text className="text-brand-orange">Back to Home</Text>
@@ -185,7 +185,7 @@ export default function WorkoutSummaryScreen() {
       {/* Bottom CTA */}
       <View className="px-5 pb-8 pt-3">
         <TouchableOpacity
-          onPress={() => router.replace('/(tabs)/home')}
+          onPress={() => router.replace('/(tabs)/today')}
           className="bg-brand-orange rounded-2xl py-4 items-center"
           activeOpacity={0.85}
         >

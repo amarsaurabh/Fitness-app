@@ -15,7 +15,7 @@ export default function Index() {
   }
 
   if (profile?.onboardingComplete) {
-    return <Redirect href="/(tabs)/home" />;
+    return <Redirect href="/(tabs)/today" />;
   }
 
   return <Redirect href="/onboarding" />;

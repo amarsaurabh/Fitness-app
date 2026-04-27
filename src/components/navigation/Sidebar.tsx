@@ -1,18 +1,31 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { usePathname, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import type { Block } from '@/store/useProgressionStore';
+import { BLOCK_REQUIREMENTS } from '@/store/useProgressionStore';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-const NAV_ITEMS: { name: string; label: string; active: IconName; inactive: IconName }[] = [
-  { name: 'home',       label: 'Home',       active: 'home',       inactive: 'home-outline' },
-  { name: 'library',    label: 'Workouts',   active: 'barbell',    inactive: 'barbell-outline' },
-  { name: 'nutrition',  label: 'Nutrition',  active: 'nutrition',  inactive: 'nutrition-outline' },
-  { name: 'progress',   label: 'Progress',   active: 'bar-chart',  inactive: 'bar-chart-outline' },
-  { name: 'motivation', label: 'Motivation', active: 'sunny',      inactive: 'sunny-outline' },
+interface NavItem {
+  name: string;
+  label: string;
+  active: IconName;
+  inactive: IconName;
+  unlocksAtBlock: Block;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { name: 'today',      label: 'Today',      active: 'sunny',      inactive: 'sunny-outline',      unlocksAtBlock: 1 },
+  { name: 'library',    label: 'Workouts',   active: 'barbell',    inactive: 'barbell-outline',    unlocksAtBlock: 1 },
+  { name: 'nutrition',  label: 'Nutrition',  active: 'nutrition',  inactive: 'nutrition-outline',  unlocksAtBlock: 2 },
+  { name: 'progress',   label: 'Progress',   active: 'bar-chart',  inactive: 'bar-chart-outline',  unlocksAtBlock: 3 },
 ];
 
-export default function Sidebar() {
+interface Props {
+  block: Block;
+}
+
+export default function Sidebar({ block }: Props) {
   const pathname = usePathname();
 
   function isActive(name: string) {
@@ -39,6 +52,33 @@ export default function Sidebar() {
       <View style={{ flex: 1, paddingHorizontal: 8 }}>
         {NAV_ITEMS.map(item => {
           const active = isActive(item.name);
+          const locked = block < item.unlocksAtBlock;
+
+          if (locked) {
+            return (
+              <View
+                key={item.name}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderRadius: 10,
+                  marginBottom: 2,
+                  opacity: 0.4,
+                }}
+              >
+                <Ionicons name={item.inactive} size={22} color="#475569" />
+                <View style={{ marginLeft: 14, flex: 1 }}>
+                  <Text style={{ fontSize: 15, color: '#475569' }}>{item.label}</Text>
+                  <Text style={{ fontSize: 11, color: '#334155', marginTop: 1 }}>
+                    🔒 {BLOCK_REQUIREMENTS[item.unlocksAtBlock]}
+                  </Text>
+                </View>
+              </View>
+            );
+          }
+
           return (
             <TouchableOpacity
               key={item.name}

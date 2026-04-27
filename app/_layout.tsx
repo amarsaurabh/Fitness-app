@@ -14,6 +14,7 @@ import { useBodyWeightStore } from '@/store/useBodyWeightStore';
 import { setNotificationHandler } from '@/services/notifications/notificationService';
 import { applyNotificationSettings } from '@/services/notifications/scheduleNotifications';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useProgressionStore } from '@/store/useProgressionStore';
 
 SplashScreen.preventAutoHideAsync();
 setNotificationHandler();
@@ -28,9 +29,11 @@ export default function RootLayout() {
   const hydrateBodyWeight = useBodyWeightStore((s) => s.hydrate);
   const checkStreak = useStreakStore((s) => s.checkStreak);
   const initAuth = useAuthStore((s) => s.initAuth);
+  const hydrateProgression = useProgressionStore((s) => s.hydrate);
 
   useEffect(() => {
     initAuth();
+    hydrateProgression();
     hydrateUser().then(() => {
       SplashScreen.hideAsync();
       const profile = useUserStore.getState().profile;

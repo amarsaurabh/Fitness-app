@@ -189,7 +189,7 @@ function EmptyWeekCard() {
         Complete at least one workout this week and come back for your personalised review.
       </Text>
       <TouchableOpacity
-        onPress={() => router.replace('/(tabs)/home')}
+        onPress={() => router.replace('/(tabs)/today')}
         className="mt-4 bg-brand-orange rounded-xl px-5 py-2.5"
         activeOpacity={0.85}
       >
