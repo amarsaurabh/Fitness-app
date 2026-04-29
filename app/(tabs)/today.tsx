@@ -315,7 +315,6 @@ export default function TodayScreen() {
   const [fromCache, setFromCache] = useState(false);
   const [fromFallback, setFromFallback] = useState(false);
   const [refreshCount, setRefreshCount] = useState(0);
-  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   const workedOutToday = hasTodaySession();
   const days = daysSince(streak.lastWorkoutDate);
@@ -323,7 +322,7 @@ export default function TodayScreen() {
   const goal = profile?.goal ?? 'stay_active';
   const name = profile?.name?.trim().split(' ')[0] ?? 'there';
   const block = computeBlock(sessions.length, streak.longest);
-  const showBanner = block > 1 && !hasSeenUnlock(block) && !bannerDismissed;
+  const showDiscoveryCard = block > 1 && !hasSeenUnlock(block);
 
   const context = contextString(name, goal, days, streak.current, streak.longest);
   const cacheKey = `mot:${goal}:${Math.max(days, 0)}:${todayString()}:${refreshCount}`;
@@ -352,9 +351,8 @@ export default function TodayScreen() {
     setTimeout(() => setRefreshing(false), 500);
   }
 
-  function handleDismissBanner() {
+  function handleDismissCard() {
     markUnlockSeen(block as Block);
-    setBannerDismissed(true);
   }
 
   const canRefresh = isGroqBudgetAvailable(GROQ_DAILY_CALL_LIMIT - 2);
@@ -380,8 +378,8 @@ export default function TodayScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Block unlock banner */}
-          {showBanner && <BlockUnlockBanner block={block as Block} onDismiss={handleDismissBanner} />}
+          {/* Contextual feature discovery — appears once at each milestone, never blocks access */}
+          {showDiscoveryCard && <BlockUnlockBanner block={block as Block} onDismiss={handleDismissCard} />}
 
           {/* 1 — Motivation hero (always first) */}
           <DailyMessageCard

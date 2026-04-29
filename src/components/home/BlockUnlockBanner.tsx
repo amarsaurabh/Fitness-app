@@ -1,11 +1,35 @@
 import { View, Text, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
 import type { Block } from '@/store/useProgressionStore';
 
-const UNLOCK_COPY: Partial<Record<Block, { emoji: string; title: string; body: string }>> = {
-  2: { emoji: '🥗', title: 'Nutrition tracking unlocked!', body: 'Track your protein to fuel your progress.' },
-  3: { emoji: '📊', title: 'Progress tracking unlocked!', body: "You've got enough data — see your trends." },
-  4: { emoji: '🏗️', title: 'Custom workouts unlocked!', body: 'Build your own routines from the library.' },
-  5: { emoji: '🏆', title: 'Full optimization unlocked!', body: "You've built the habit. Now let's fine-tune it." },
+const DISCOVERY: Partial<Record<Block, {
+  emoji: string;
+  title: string;
+  body: string;
+  cta: string;
+  route: string;
+}>> = {
+  2: {
+    emoji: '🥗',
+    title: "You're building momentum",
+    body: "3 workouts in — nutrition is the next piece. Track your protein and see the full picture.",
+    cta: 'Explore nutrition →',
+    route: '/(tabs)/nutrition',
+  },
+  3: {
+    emoji: '📊',
+    title: 'Your data is taking shape',
+    body: "10 sessions logged — you have real trends now. See how your training is evolving.",
+    cta: 'See your progress →',
+    route: '/(tabs)/progress',
+  },
+  4: {
+    emoji: '🏗️',
+    title: 'Ready to build your own?',
+    body: "20 sessions in — you know what works for you. Create your own workout routines.",
+    cta: 'Build a workout →',
+    route: '/(tabs)/library',
+  },
 };
 
 interface Props {
@@ -13,15 +37,15 @@ interface Props {
   onDismiss(): void;
 }
 
-export default function BlockUnlockBanner({ block, onDismiss }: Props) {
-  const copy = UNLOCK_COPY[block];
-  if (!copy) return null;
+export default function FeatureDiscoveryCard({ block, onDismiss }: Props) {
+  const card = DISCOVERY[block];
+  if (!card) return null;
 
   return (
     <View style={{
-      backgroundColor: 'rgba(249, 115, 22, 0.12)',
+      backgroundColor: 'rgba(148, 163, 184, 0.08)',
       borderWidth: 1,
-      borderColor: 'rgba(249, 115, 22, 0.3)',
+      borderColor: '#334155',
       borderRadius: 16,
       padding: 16,
       marginBottom: 16,
@@ -29,13 +53,20 @@ export default function BlockUnlockBanner({ block, onDismiss }: Props) {
       alignItems: 'flex-start',
       gap: 12,
     }}>
-      <Text style={{ fontSize: 24 }}>{copy.emoji}</Text>
+      <Text style={{ fontSize: 22, marginTop: 1 }}>{card.emoji}</Text>
       <View style={{ flex: 1 }}>
-        <Text style={{ color: '#f97316', fontWeight: '700', fontSize: 15 }}>{copy.title}</Text>
-        <Text style={{ color: '#94a3b8', fontSize: 13, marginTop: 3 }}>{copy.body}</Text>
+        <Text style={{ color: '#e2e8f0', fontWeight: '600', fontSize: 14, marginBottom: 3 }}>
+          {card.title}
+        </Text>
+        <Text style={{ color: '#64748b', fontSize: 13, lineHeight: 18, marginBottom: 10 }}>
+          {card.body}
+        </Text>
+        <TouchableOpacity onPress={() => { onDismiss(); router.push(card.route as any); }}>
+          <Text style={{ color: '#f97316', fontSize: 13, fontWeight: '600' }}>{card.cta}</Text>
+        </TouchableOpacity>
       </View>
       <TouchableOpacity onPress={onDismiss} hitSlop={10}>
-        <Text style={{ color: '#475569', fontSize: 22, lineHeight: 24 }}>×</Text>
+        <Text style={{ color: '#334155', fontSize: 20, lineHeight: 22 }}>×</Text>
       </TouchableOpacity>
     </View>
   );
