@@ -28,10 +28,10 @@ export default function Sidebar() {
     }}>
       <View style={{ paddingHorizontal: 24, paddingBottom: 32 }}>
         <Text style={{ color: '#f97316', fontSize: 24, fontWeight: '700', letterSpacing: -0.5 }}>
-          FitLife
+          FytNu
         </Text>
         <Text style={{ color: '#475569', fontSize: 12, marginTop: 2 }}>
-          Your fitness companion
+          Fitness + Nutrition
         </Text>
       </View>
 

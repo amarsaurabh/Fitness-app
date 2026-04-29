@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "FitLife",
-    "slug": "fitlife",
+    "name": "FytNu",
+    "slug": "fytnu",
     "version": "1.0.0",
-    "scheme": "fitlife",
+    "scheme": "fytnu",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "automatic",
@@ -15,14 +15,14 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.fitlife.app"
+      "bundleIdentifier": "com.fytnu.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0f172a"
       },
-      "package": "com.fitlife.app"
+      "package": "com.fytnu.app"
     },
     "web": {
       "bundler": "metro",

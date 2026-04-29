@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // MMKV for hot-path reads (streak, sessions, LLM cache)
 // Note: requires Expo Dev Client — does not work in Expo Go
-export const mmkv = new MMKV({ id: 'fitlife-store' });
+export const mmkv = new MMKV({ id: 'fytnu-store' });
 
 export function getMMKV<T>(key: string): T | undefined {
   const raw = mmkv.getString(key);
