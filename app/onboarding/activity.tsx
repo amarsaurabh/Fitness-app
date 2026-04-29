@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import OnboardingShell from '@/components/onboarding/OnboardingShell';
 import { StepIndicator } from '@/components/onboarding/StepIndicator';
 import { SelectableCard } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -54,7 +54,7 @@ export default function OnboardingStep4() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-brand-navy">
+    <OnboardingShell>
       <View className="px-6 pt-6 pb-4 flex-row items-center">
         <TouchableOpacity onPress={() => router.back()} className="mr-4 p-1">
           <Text className="text-slate-400 text-base">← Back</Text>
@@ -107,6 +107,6 @@ export default function OnboardingStep4() {
           style={{ width: '100%' }}
         />
       </View>
-    </SafeAreaView>
+    </OnboardingShell>
   );
 }

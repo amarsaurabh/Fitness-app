@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import OnboardingShell from '@/components/onboarding/OnboardingShell';
 import { StepIndicator } from '@/components/onboarding/StepIndicator';
 import { GoalPicker } from '@/components/onboarding/GoalPicker';
 import { Button } from '@/components/ui/Button';
@@ -36,7 +36,7 @@ export default function OnboardingStep1() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-brand-navy">
+    <OnboardingShell>
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'web' ? undefined : 'height'}
@@ -90,6 +90,6 @@ export default function OnboardingStep1() {
           />
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </OnboardingShell>
   );
 }
