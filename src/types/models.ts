@@ -104,6 +104,7 @@ export interface FridgeItem {
 export interface CulturalFood {
   name: string;
   proteinPer100g: number;
+  kcalPer100g: number;
   servingG: number;
   category: FridgeItem['category'];
 }

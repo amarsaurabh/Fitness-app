@@ -3,6 +3,8 @@ import { FOOD_CULTURE_LABELS } from '@/data/culturalFoods';
 import { GROQ_DAILY_CALL_LIMIT, TTL_FRIDGE_MEALS } from '@/utils/constants';
 import { buildFridgeCacheKey } from '@/utils/hash';
 
+const TTL_SMART_MEAL = 4 * 60 * 60 * 1000; // 4 hours
+
 // Static fallbacks — used when budget is exhausted or API unavailable
 const FALLBACK: Record<FoodCulture, string> = {
   'south-asian':
@@ -27,6 +29,73 @@ export interface MealSuggestionsResult {
   text: string;
   fromCache: boolean;
   fromFallback: boolean;
+}
+
+export async function getSmartMealSuggestion(
+  foodCulture: FoodCulture,
+  remainingProteinG: number,
+  hourOfDay: number,
+  cacheGet: (key: string) => string | null,
+  cacheSet: (key: string, response: string, ttlMs: number) => void,
+  isGroqBudgetAvailable: (limit: number) => boolean,
+  incrementGroqCalls: () => void,
+): Promise<MealSuggestionsResult> {
+  const mealTime = hourOfDay < 11 ? 'breakfast' : hourOfDay < 15 ? 'lunch' : hourOfDay < 18 ? 'afternoon snack' : 'dinner';
+  const cacheKey = `smart-meal:${foodCulture}:${mealTime}:${Math.round(remainingProteinG / 10) * 10}`;
+
+  const cached = cacheGet(cacheKey);
+  if (cached) return { text: cached, fromCache: true, fromFallback: false };
+
+  if (!isGroqBudgetAvailable(GROQ_DAILY_CALL_LIMIT)) {
+    return { text: FALLBACK[foodCulture], fromCache: false, fromFallback: true };
+  }
+
+  const apiKey = process.env.EXPO_PUBLIC_GROQ_API_KEY;
+  if (!apiKey) {
+    return { text: FALLBACK[foodCulture], fromCache: false, fromFallback: true };
+  }
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a concise nutrition assistant specialising in ${FOOD_CULTURE_LABELS[foodCulture]} cuisine.`,
+          },
+          {
+            role: 'user',
+            content: `It's ${mealTime} and I still need ${remainingProteinG}g of protein today.
+Suggest 3 quick ${mealTime} ideas from ${FOOD_CULTURE_LABELS[foodCulture]} cuisine.
+Use this exact format for each:
+
+**[Meal Name]** — ~Xg protein
+[1 sentence prep tip]
+
+Keep it brief and practical.`,
+          },
+        ],
+        max_tokens: 350,
+        temperature: 0.7,
+      }),
+    });
+
+    if (!res.ok) throw new Error(`Groq error ${res.status}`);
+
+    const data = await res.json();
+    const text: string = data.choices?.[0]?.message?.content ?? '';
+    incrementGroqCalls();
+    cacheSet(cacheKey, text, TTL_SMART_MEAL);
+    return { text, fromCache: false, fromFallback: false };
+  } catch {
+    return { text: FALLBACK[foodCulture], fromCache: false, fromFallback: true };
+  }
 }
 
 export async function getMealSuggestions(

@@ -13,8 +13,87 @@ import { useNutritionStore } from '@/store/useNutritionStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useLLMCacheStore } from '@/store/useLLMCacheStore';
 import { getCulturalFoods, FOOD_CULTURE_LABELS, FOOD_CULTURE_EMOJI } from '@/data/culturalFoods';
-import { getMealSuggestions } from '@/services/llm/groqService';
+import { getMealSuggestions, getSmartMealSuggestion } from '@/services/llm/groqService';
 import type { CulturalFood, FridgeItem } from '@/types/models';
+
+// ─── Nutrition Streak Widget ─────────────────────────────────────────────────
+
+function NutritionStreakWidget() {
+  const nutritionStreak = useNutritionStore((s) => s.nutritionStreak);
+  const weeklyProteinDays = useNutritionStore((s) => s.weeklyProteinDays);
+  const todayProteinG = useNutritionStore((s) => s.todayProteinG);
+
+  const streak = nutritionStreak();
+  const days = weeklyProteinDays();
+  const loggedToday = todayProteinG() > 0;
+
+  // Last 7 day dots
+  const last7 = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    return d;
+  });
+
+  const weeklyLog = useNutritionStore((s) => s.weeklyLog);
+
+  return (
+    <View className="bg-brand-slate rounded-3xl p-5 mb-4">
+      <View className="flex-row items-center justify-between mb-4">
+        <Text className="text-slate-400 text-xs font-semibold uppercase tracking-widest">
+          Nutrition streak
+        </Text>
+        {streak > 0 && (
+          <View className="bg-orange-500/20 rounded-full px-3 py-0.5">
+            <Text className="text-brand-orange text-xs font-bold">🔥 {streak}d streak</Text>
+          </View>
+        )}
+      </View>
+
+      {/* 7-day dots */}
+      <View className="flex-row justify-between mb-4">
+        {last7.map((d, i) => {
+          const dateStr = d.toISOString().slice(0, 10);
+          const isToday = i === 6;
+          const hasLog = isToday ? todayProteinG() > 0 : (weeklyLog[dateStr] ?? 0) > 0;
+          const dayLabel = d.toLocaleDateString('en', { weekday: 'narrow' });
+          return (
+            <View key={i} className="items-center gap-1.5">
+              <View
+                className={`w-8 h-8 rounded-full items-center justify-center ${
+                  hasLog
+                    ? 'bg-brand-orange'
+                    : isToday
+                    ? 'bg-brand-navy border-2 border-brand-orange/40'
+                    : 'bg-brand-navy'
+                }`}
+              >
+                {hasLog && <Text className="text-white text-xs font-bold">✓</Text>}
+              </View>
+              <Text className="text-slate-500 text-xs">{dayLabel}</Text>
+            </View>
+          );
+        })}
+      </View>
+
+      <View className="flex-row gap-3">
+        <View className="flex-1 bg-brand-navy rounded-2xl py-3 items-center">
+          <Text className="text-white text-xl font-bold">{days}</Text>
+          <Text className="text-slate-500 text-xs mt-0.5">days this week</Text>
+        </View>
+        <View className="flex-1 bg-brand-navy rounded-2xl py-3 items-center">
+          <Text className={`text-xl font-bold ${loggedToday ? 'text-green-400' : 'text-slate-500'}`}>
+            {loggedToday ? '✓' : '–'}
+          </Text>
+          <Text className="text-slate-500 text-xs mt-0.5">today logged</Text>
+        </View>
+        <View className="flex-1 bg-brand-navy rounded-2xl py-3 items-center">
+          <Text className="text-white text-xl font-bold">{streak}</Text>
+          <Text className="text-slate-500 text-xs mt-0.5">day streak</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
 
 // ─── Protein Ring ────────────────────────────────────────────────────────────
 
@@ -171,6 +250,7 @@ function FoodChip({
   justLogged: boolean;
 }) {
   const proteinPerServing = Math.round((food.proteinPer100g * food.servingG) / 100);
+  const kcalPerServing = Math.round((food.kcalPer100g * food.servingG) / 100);
 
   return (
     <TouchableOpacity
@@ -182,7 +262,7 @@ function FoodChip({
         {food.name}
       </Text>
       <Text className="text-brand-orange text-xs font-bold">{proteinPerServing}g protein</Text>
-      <Text className="text-slate-500 text-xs mt-0.5">{food.servingG}g serving</Text>
+      <Text className="text-slate-500 text-xs mt-0.5">{kcalPerServing} kcal · {food.servingG}g</Text>
       {justLogged && (
         <Text className="text-green-400 text-xs font-bold mt-1">✓ Logged!</Text>
       )}
@@ -193,6 +273,7 @@ function FoodChip({
 function CulturalFoodsSection() {
   const profile = useUserStore((s) => s.profile);
   const logProtein = useNutritionStore((s) => s.logProtein);
+  const logCalories = useNutritionStore((s) => s.logCalories);
   const [loggedFoods, setLoggedFoods] = useState<Set<string>>(new Set());
 
   const culture = profile?.foodCulture ?? 'global';
@@ -201,8 +282,10 @@ function CulturalFoodsSection() {
   const emoji = FOOD_CULTURE_EMOJI[culture];
 
   function handleLog(food: CulturalFood) {
-    const grams = Math.round((food.proteinPer100g * food.servingG) / 100);
-    logProtein(grams);
+    const proteinG = Math.round((food.proteinPer100g * food.servingG) / 100);
+    const kcal = Math.round((food.kcalPer100g * food.servingG) / 100);
+    logProtein(proteinG);
+    logCalories(kcal);
     setLoggedFoods((prev) => new Set([...prev, food.name]));
     setTimeout(() => {
       setLoggedFoods((prev) => {
@@ -232,6 +315,93 @@ function CulturalFoodsSection() {
           />
         ))}
       </ScrollView>
+    </View>
+  );
+}
+
+// ─── Smart Meal AI Button ─────────────────────────────────────────────────────
+
+function SmartMealSection() {
+  const profile = useUserStore((s) => s.profile);
+  const dailyProteinGoal = useUserStore((s) => s.dailyProteinGoal);
+  const todayProteinG = useNutritionStore((s) => s.todayProteinG);
+  const { get: cacheGet, set: cacheSet, isGroqBudgetAvailable, incrementGroqCalls } =
+    useLLMCacheStore();
+  const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [fromFallback, setFromFallback] = useState(false);
+
+  const remaining = Math.max(dailyProteinGoal() - todayProteinG(), 0);
+  const hourOfDay = new Date().getHours();
+
+  async function handleSmartMeal() {
+    setLoading(true);
+    setSuggestion(null);
+    try {
+      const result = await getSmartMealSuggestion(
+        profile?.foodCulture ?? 'global',
+        remaining,
+        hourOfDay,
+        cacheGet,
+        cacheSet,
+        isGroqBudgetAvailable,
+        incrementGroqCalls,
+      );
+      setSuggestion(result.text);
+      setFromCache(result.fromCache);
+      setFromFallback(result.fromFallback);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <View className="mb-4">
+      <TouchableOpacity
+        onPress={handleSmartMeal}
+        disabled={loading}
+        activeOpacity={0.85}
+        className="bg-brand-slate rounded-2xl px-5 py-4 flex-row items-center gap-3"
+      >
+        <View className="w-10 h-10 bg-brand-orange/20 rounded-xl items-center justify-center">
+          {loading ? (
+            <ActivityIndicator color="#f97316" size="small" />
+          ) : (
+            <Text className="text-xl">🤔</Text>
+          )}
+        </View>
+        <View className="flex-1">
+          <Text className="text-white font-bold text-base">
+            {loading ? 'Thinking…' : 'What should I eat now?'}
+          </Text>
+          <Text className="text-slate-400 text-xs mt-0.5">
+            {remaining > 0 ? `${remaining}g protein left · AI picks for you` : 'Goal hit! See bonus ideas'}
+          </Text>
+        </View>
+        {!loading && <Text className="text-brand-orange text-lg">✨</Text>}
+      </TouchableOpacity>
+
+      {suggestion && (
+        <View className="bg-brand-slate rounded-2xl p-5 mt-2">
+          <View className="flex-row items-center justify-between mb-3">
+            <Text className="text-white font-bold text-base">Your meal ideas</Text>
+            <View className="flex-row gap-2">
+              {fromCache && (
+                <View className="bg-blue-500/20 rounded-lg px-2 py-0.5">
+                  <Text className="text-blue-300 text-xs">cached</Text>
+                </View>
+              )}
+              {fromFallback && (
+                <View className="bg-slate-500/30 rounded-lg px-2 py-0.5">
+                  <Text className="text-slate-400 text-xs">offline</Text>
+                </View>
+              )}
+            </View>
+          </View>
+          {parseMealText(suggestion)}
+        </View>
+      )}
     </View>
   );
 }
@@ -429,9 +599,11 @@ export default function NutritionScreen() {
           </Text>
         </View>
 
+        <NutritionStreakWidget />
         <ProteinProgress />
         <CalorieProgress />
         <CulturalFoodsSection />
+        <SmartMealSection />
         <FridgeSection />
       </ScrollView>
     </SafeAreaView>

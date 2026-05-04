@@ -6,6 +6,8 @@ import { useWorkoutStore } from '@/store/useWorkoutStore';
 import { useStreakStore } from '@/store/useStreakStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useNutritionStore } from '@/store/useNutritionStore';
+import { getCulturalFoods } from '@/data/culturalFoods';
 import { computeNewDifficultyBias } from '@/utils/adaptiveDifficulty';
 import { MIN_SESSION_DURATION_SEC } from '@/utils/constants';
 import SaveProgressModal from '@/components/auth/SaveProgressModal';
@@ -162,24 +164,8 @@ export default function WorkoutSummaryScreen() {
           </View>
         )}
 
-        {/* Protein nudge */}
-        <View className="bg-brand-slate rounded-2xl p-4 flex-row items-center gap-4 mb-5">
-          <View className="w-12 h-12 bg-green-500/20 rounded-2xl items-center justify-center">
-            <Text className="text-2xl">🥗</Text>
-          </View>
-          <View className="flex-1">
-            <Text className="text-white font-semibold">Log your protein</Text>
-            <Text className="text-slate-400 text-sm mt-0.5">
-              Recovery starts with what you eat
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => router.replace('/(tabs)/nutrition')}
-            className="bg-brand-orange rounded-xl px-3 py-1.5"
-          >
-            <Text className="text-white text-xs font-bold">Log</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Post-workout nutrition card */}
+        <PostWorkoutNutritionCard caloriesBurned={session.caloriesBurned} />
       </ScrollView>
 
       {/* Bottom CTA */}
@@ -206,6 +192,80 @@ function StatBox({ value, label }: { value: string; label: string }) {
     <View className="flex-1 bg-brand-slate rounded-2xl py-4 items-center">
       <Text className="text-white text-2xl font-bold">{value}</Text>
       <Text className="text-slate-400 text-xs mt-1">{label}</Text>
+    </View>
+  );
+}
+
+function PostWorkoutNutritionCard({ caloriesBurned }: { caloriesBurned: number }) {
+  const profile = useUserStore((s) => s.profile);
+  const logProtein = useNutritionStore((s) => s.logProtein);
+  const logCalories = useNutritionStore((s) => s.logCalories);
+  const dailyProteinGoal = useUserStore((s) => s.dailyProteinGoal);
+  const todayProteinG = useNutritionStore((s) => s.todayProteinG);
+  const [loggedFoods, setLoggedFoods] = useState<Set<string>>(new Set());
+
+  const remaining = Math.max(dailyProteinGoal() - todayProteinG(), 0);
+  const foods = getCulturalFoods(profile?.foodCulture ?? 'global').slice(0, 3);
+
+  function handleLog(food: { name: string; proteinPer100g: number; kcalPer100g: number; servingG: number }) {
+    const proteinG = Math.round((food.proteinPer100g * food.servingG) / 100);
+    const kcal = Math.round((food.kcalPer100g * food.servingG) / 100);
+    logProtein(proteinG);
+    logCalories(kcal);
+    setLoggedFoods((prev) => new Set([...prev, food.name]));
+  }
+
+  return (
+    <View className="bg-brand-slate rounded-2xl p-4 mb-5">
+      <View className="flex-row items-center gap-3 mb-3">
+        <View className="w-10 h-10 bg-green-500/20 rounded-xl items-center justify-center">
+          <Text className="text-xl">🥗</Text>
+        </View>
+        <View className="flex-1">
+          <Text className="text-white font-bold text-base">Refuel now</Text>
+          <Text className="text-slate-400 text-xs mt-0.5">
+            {caloriesBurned > 0 ? `You burned ~${caloriesBurned} kcal · ` : ''}
+            {remaining > 0 ? `${remaining}g protein left today` : 'Protein goal reached! 🎉'}
+          </Text>
+        </View>
+      </View>
+
+      <View className="gap-2">
+        {foods.map((food) => {
+          const proteinG = Math.round((food.proteinPer100g * food.servingG) / 100);
+          const kcal = Math.round((food.kcalPer100g * food.servingG) / 100);
+          const logged = loggedFoods.has(food.name);
+          return (
+            <TouchableOpacity
+              key={food.name}
+              onPress={() => !logged && handleLog(food)}
+              activeOpacity={0.8}
+              className={`flex-row items-center justify-between rounded-xl px-3 py-2.5 ${
+                logged ? 'bg-green-500/15 border border-green-500/30' : 'bg-brand-navy'
+              }`}
+            >
+              <View className="flex-1">
+                <Text className="text-white text-sm font-semibold" numberOfLines={1}>{food.name}</Text>
+                <Text className="text-slate-500 text-xs mt-0.5">{proteinG}g protein · {kcal} kcal</Text>
+              </View>
+              {logged ? (
+                <Text className="text-green-400 text-xs font-bold ml-3">✓ Logged</Text>
+              ) : (
+                <View className="bg-brand-orange rounded-lg px-2.5 py-1 ml-3">
+                  <Text className="text-white text-xs font-bold">Log</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <TouchableOpacity
+        onPress={() => router.replace('/(tabs)/nutrition')}
+        className="mt-3 items-center"
+      >
+        <Text className="text-brand-orange text-xs font-semibold">See all food options →</Text>
+      </TouchableOpacity>
     </View>
   );
 }
